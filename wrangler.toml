@@ -8,4 +8,4 @@ compatibility_date = "2026-09-01"
 # و مقدار id ای که برمی‌گرداند را جای زیر بگذارید.
 [[kv_namespaces]]
 binding = "BOT_KV"
-id = "PUT_YOUR_KV_NAMESPACE_ID_HERE"
+id = "ef51ea70aa6749d88415e6a5f693643d"
