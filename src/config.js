@@ -8,15 +8,14 @@
 // فقط کاربرانی که آیدی عددی‌شان در این لیست باشد می‌توانند به بات دستور بدهند.
 // برای گرفتن آیدی عددی خودتان کافیست به بات @userinfobot در تلگرام پیام بدهید.
 export const ADMIN_IDS = [
-  123456789, // <- اینجا را با آیدی عددی ادمین اول جایگزین کنید
-  987654321, // <- آیدی ادمین دوم (اگر لازم نیست، این خط را حذف کنید)
+  609570467,
 ];
 
 // --- چنل‌های اطلاع‌رسانی که باید پیام جدید محصول در آن‌ها منتشر شود ---
 // نکته: بات باید از قبل به عنوان ادمین در هر کدام از این چنل‌ها اضافه شده باشد.
-export const TELEGRAM_CHANNEL_ID = "@your_telegram_channel"; // یا آیدی عددی مثل -1001234567890
-export const BALE_CHANNEL_ID = "your_bale_chat_id";
-export const RUBIKA_CHANNEL_ID = "your_rubika_chat_id";
+export const TELEGRAM_CHANNEL_ID = "-1003888282726"; // یا آیدی عددی مثل -1001234567890
+export const BALE_CHANNEL_ID = "5013711118";
+export const RUBIKA_CHANNEL_ID = "c0ECct20949625dd87dc566b5e92ba85";
 
 // --- کلیدهای ذخیره‌سازی در KV ---
 export const KV_KEY_TEMPLATE = "template";
