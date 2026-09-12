@@ -1,0 +1,11 @@
+name = "broadcast-bot"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# فضای ذخیره‌سازی کلید-مقدار برای نگهداری «پیام آماده» و «قوانین اتوماسیون اینستاگرام»
+# قبل از دیپلوی باید این namespace را بسازید:
+#   npx wrangler kv namespace create BOT_KV
+# و مقدار id ای که برمی‌گرداند را جای زیر بگذارید.
+[[kv_namespaces]]
+binding = "BOT_KV"
+id = "PUT_YOUR_KV_NAMESPACE_ID_HERE"
