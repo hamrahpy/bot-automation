@@ -1,12 +1,12 @@
 import { ADMIN_IDS, HELP_TEXT } from "./config.js";
 import { normalizeDigits } from "./utils.js";
 import { getTemplate, setTemplate, getIgRules, saveIgRules } from "./storage.js";
-import { broadcastProduct } from "./broadcast.js";
+import { broadcastProduct, broadcastRaw } from "./broadcast.js";
 import * as telegram from "./telegram.js";
 import * as instagram from "./instagram.js";
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -26,7 +26,11 @@ export default {
 
     if (path === "/webhook/telegram" && method === "POST") {
       const update = await request.json();
-      await handleTelegramUpdate(env, update);
+      // فوراً به تلگرام جواب می‌دهیم تا آن را وادار به تلاش دوباره (و ارسال تکراری) نکنیم؛
+      // پردازش واقعی (ارسال به هر سه پلتفرم) در پس‌زمینه ادامه پیدا می‌کند.
+      ctx.waitUntil(
+        handleTelegramUpdate(env, update).catch((err) => console.error("telegram update error:", err))
+      );
       return new Response("OK");
     }
 
@@ -49,6 +53,15 @@ export default {
 async function handleTelegramUpdate(env, update) {
   const message = update.message;
   if (!message) return; // سایر انواع آپدیت (مثل edited_message) را نادیده می‌گیریم
+
+  // محافظ اضافه در برابر پردازش تکراری: اگر همین update_id قبلاً پردازش شده، دوباره کاری نکن
+  const updateId = update.update_id;
+  if (updateId !== undefined && updateId !== null) {
+    const dedupeKey = `processed:${updateId}`;
+    const already = await env.BOT_KV.get(dedupeKey);
+    if (already) return;
+    await env.BOT_KV.put(dedupeKey, "1", { expirationTtl: 86400 }); // ۲۴ ساعت کافی است
+  }
 
   const fromId = message.from?.id;
   const chatId = message.chat?.id;
@@ -126,23 +139,23 @@ async function handleTelegramUpdate(env, update) {
     return;
   }
 
-  // --- انتشار محصول (عکس + کپشن قیمت,وزن) ---
+  // --- انتشار محصول (عکس + کپشن) ---
   if (photo && photo.length > 0) {
-    const parsed = parsePriceWeight(caption);
-    if (!parsed) {
-      await telegram.sendMessage(
-        env,
-        chatId,
-        "کپشن باید به این شکل باشد:\nقیمت,وزن\nمثال: 250000,1.5"
-      );
-      return;
-    }
-
-    const [price, weight] = parsed;
     const fileId = photo[photo.length - 1].file_id; // بزرگترین سایز عکس
-    await telegram.sendMessage(env, chatId, "⏳ در حال انتشار در همه پلتفرم‌ها...");
-    const results = await broadcastProduct(env, fileId, price, weight);
-    await telegram.sendMessage(env, chatId, `نتیجه انتشار:\n${JSON.stringify(results).slice(0, 3000)}`);
+    const parsed = parsePriceWeight(caption);
+
+    if (parsed) {
+      // کپشن دقیقاً فرمت «قیمت,وزن» بود -> از پیام آماده (Template) استفاده می‌شود
+      const [price, weight] = parsed;
+      await telegram.sendMessage(env, chatId, "⏳ در حال انتشار (با پیام آماده) در همه پلتفرم‌ها...");
+      const results = await broadcastProduct(env, fileId, price, weight);
+      await telegram.sendMessage(env, chatId, `نتیجه انتشار:\n${JSON.stringify(results).slice(0, 3000)}`);
+    } else {
+      // هر کپشن دیگری (یا خالی) -> انتشار مستقیم و آزاد، بدون قالب
+      await telegram.sendMessage(env, chatId, "⏳ در حال انتشار مستقیم (بدون پیام آماده) در همه پلتفرم‌ها...");
+      const results = await broadcastRaw(env, fileId, caption);
+      await telegram.sendMessage(env, chatId, `نتیجه انتشار:\n${JSON.stringify(results).slice(0, 3000)}`);
+    }
     return;
   }
 
